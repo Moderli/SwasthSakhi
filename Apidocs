@@ -1,0 +1,195 @@
+# Swasth Sakhi API Documentation
+
+## Authentication API (Supabase)
+
+### Base URL
+```
+https://[YOUR_PROJECT_REF].supabase.co
+```
+
+### Authentication Endpoints
+
+#### 1. Sign Up
+```http
+POST /auth/v1/signup
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "options": {
+    "data": {
+      "name": "User Name"
+    }
+  }
+}
+```
+
+Response:
+```json
+{
+  "id": "user-uuid",
+  "email": "user@example.com",
+  "user_metadata": {
+    "name": "User Name"
+  },
+  "created_at": "2024-03-14T12:00:00Z"
+}
+```
+
+#### 2. Sign In
+```http
+POST /auth/v1/token?grant_type=password
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+Response:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expires_in": 3600,
+  "user": {
+    "id": "user-uuid",
+    "email": "user@example.com",
+    "user_metadata": {
+      "name": "User Name"
+    }
+  }
+}
+```
+
+#### 3. Sign Out
+```http
+POST /auth/v1/logout
+Authorization: Bearer <access_token>
+```
+
+Response:
+```json
+{
+  "message": "Successfully logged out"
+}
+```
+
+### Database Tables
+
+#### 1. profiles
+```sql
+create table profiles (
+  id uuid references auth.users on delete cascade,
+  name text,
+  email text unique,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (id)
+);
+```
+
+#### 2. health_records
+```sql
+create table health_records (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references profiles(id) on delete cascade,
+  record_type text not null,
+  record_data jsonb not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+```
+
+### Row Level Security (RLS) Policies
+
+#### profiles table
+```sql
+-- Enable RLS
+alter table profiles enable row level security;
+
+-- Create policy for users to view their own profile
+create policy "Users can view own profile"
+  on profiles for select
+  using ( auth.uid() = id );
+
+-- Create policy for users to update their own profile
+create policy "Users can update own profile"
+  on profiles for update
+  using ( auth.uid() = id );
+```
+
+#### health_records table
+```sql
+-- Enable RLS
+alter table health_records enable row level security;
+
+-- Create policy for users to view their own records
+create policy "Users can view own records"
+  on health_records for select
+  using ( auth.uid() = user_id );
+
+-- Create policy for users to insert their own records
+create policy "Users can insert own records"
+  on health_records for insert
+  with check ( auth.uid() = user_id );
+
+-- Create policy for users to update their own records
+create policy "Users can update own records"
+  on health_records for update
+  using ( auth.uid() = user_id );
+
+-- Create policy for users to delete their own records
+create policy "Users can delete own records"
+  on health_records for delete
+  using ( auth.uid() = user_id );
+```
+
+### Environment Variables
+```env
+SUPABASE_URL=https://[YOUR_PROJECT_REF].supabase.co
+SUPABASE_ANON_KEY=[YOUR_ANON_KEY]
+SUPABASE_SERVICE_ROLE_KEY=[YOUR_SERVICE_ROLE_KEY]
+```
+
+### Flutter Integration
+
+1. Add Supabase dependencies to `pubspec.yaml`:
+```yaml
+dependencies:
+  supabase_flutter: ^2.3.4
+```
+
+2. Initialize Supabase in `main.dart`:
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await Supabase.initialize(
+    url: 'SUPABASE_URL',
+    anonKey: 'SUPABASE_ANON_KEY',
+  );
+  
+  runApp(const MyApp());
+}
+```
+
+3. Access Supabase client:
+```dart
+final supabase = Supabase.instance.client;
+```
+
+### Error Codes
+
+| Code | Description |
+|------|-------------|
+| 400 | Bad Request - Invalid input data |
+| 401 | Unauthorized - Invalid or missing token |
+| 403 | Forbidden - Insufficient permissions |
+| 404 | Not Found - Resource doesn't exist |
+| 500 | Internal Server Error |
+
+### Rate Limits
+- 100 requests per minute per IP
+- 1000 requests per hour per user
+- 10000 requests per day per project
