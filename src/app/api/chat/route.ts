@@ -2,24 +2,52 @@ import {
   GoogleGenerativeAI,
   HarmCategory,
   HarmBlockThreshold,
+  Part,
 } from '@google/generative-ai';
 
 export const runtime = 'edge';
 
 const genAI = new GoogleGenerativeAI(process.env.GEM_API_KEY || "");
 
-interface Message {
+interface ApiMessage {
     role: 'user' | 'assistant';
     content: string;
+    image?: string; // base64 encoded image
 }
 
-const formatMessage = (message: Message) => ({
-    role: message.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: message.content }],
-});
+const formatMessage = (message: ApiMessage) => {
+    if (!message.image) {
+        return {
+            role: message.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: message.content }],
+        };
+    }
+
+    // This is a multimodal request
+    const imagePart: Part = {
+        inlineData: {
+            mimeType: message.image.match(/data:(.*);base64,/)![1],
+            data: message.image.split(',')[1],
+        },
+    };
+
+    if (!message.content) {
+        return {
+            role: 'user',
+            parts: [imagePart],
+        };
+    }
+
+    return {
+        role: 'user',
+        parts: [{ text: message.content }, imagePart],
+    };
+};
 
 export async function POST(req: Request) {
-    const { messages } : { messages: Message[] } = await req.json();
+    const { messages } : { messages: ApiMessage[] } = await req.json();
+
+    const formattedMessages = messages.map(formatMessage);
 
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash-latest',
@@ -43,12 +71,16 @@ export async function POST(req: Request) {
         ],
     });
 
+    const lastMessage = formattedMessages.pop();
+    if (!lastMessage) {
+        return new Response('No message found', { status: 400 });
+    }
+
     const chat = model.startChat({
-        history: messages.slice(0, -1).map(formatMessage),
+        history: formattedMessages,
     });
 
-    const lastMessage = messages[messages.length - 1];
-    const result = await chat.sendMessageStream(lastMessage.content);
+    const result = await chat.sendMessageStream(lastMessage.parts);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

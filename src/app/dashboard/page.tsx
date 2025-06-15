@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, ChangeEvent, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User as UserIcon, Bot } from 'lucide-react';
+import { User as UserIcon, Bot, Paperclip, X } from 'lucide-react';
 import Image from 'next/image';
 import { useSupabase } from '@/app/supabase-provider';
 
@@ -10,7 +10,16 @@ interface Message {
     id: string;
     role: 'user' | 'assistant';
     content: string;
+    image?: string;
 }
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -18,8 +27,11 @@ export default function DashboardPage() {
     const user = session?.user;
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isChatLoading, setIsChatLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const checkUserStatus = async () => {
@@ -65,21 +77,60 @@ export default function DashboardPage() {
         setInput(e.target.value);
     };
 
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+        if(fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }
+
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        if (!input.trim() && !imageFile) return;
 
-        const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input };
-        const currentMessages = [...messages, userMessage];
-        setMessages(currentMessages);
+        const userMessage: Message = { 
+            id: Date.now().toString(), 
+            role: 'user', 
+            content: input,
+        };
+        
+        if (imageFile && imagePreview) {
+            userMessage.image = imagePreview;
+        }
+
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
+        
+        const image = imageFile ? await fileToBase64(imageFile) : null;
+        
         setInput('');
+        setImageFile(null);
+        setImagePreview(null);
+        if(fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
         setIsChatLoading(true);
 
         try {
+            const apiMessages = newMessages.map(msg => ({
+                role: msg.role,
+                content: msg.content,
+                ...(msg.image && msg.role === 'user' && { image }),
+            })).filter(msg => msg.role !== 'assistant');
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: currentMessages }),
+                body: JSON.stringify({ messages: apiMessages }),
             });
 
             if (!response.body) {
@@ -170,7 +221,10 @@ export default function DashboardPage() {
                                             <Bot size={20} className="text-gray-600"/>
                                         </div>
                                     )}
-                                    <div className={`rounded-lg p-3 max-w-[75%] ${m.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
+                                    <div className={`rounded-lg p-3 max-w-[75%] ${m.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-900'}`}>
+                                        {m.image && (
+                                            <Image src={m.image} alt="User upload" width={200} height={200} className="rounded-md mb-2"/>
+                                        )}
                                         <p className="text-sm">{m.content}</p>
                                     </div>
                                     {m.role === 'user' && user && !user.is_anonymous && user.user_metadata.avatar_url && (
@@ -196,7 +250,32 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <footer className="p-4 border-t">
+                        {imagePreview && (
+                            <div className="mb-2 relative w-24 h-24 rounded-md overflow-hidden">
+                                <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
+                                <button
+                                    onClick={handleRemoveImage}
+                                    className="absolute top-1 right-1 bg-gray-900 bg-opacity-50 text-white rounded-full p-1"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        )}
                         <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                             <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="hidden"
+                                ref={fileInputRef}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="p-2 text-gray-500 hover:text-gray-700"
+                            >
+                                <Paperclip size={20} />
+                            </button>
                             <input
                                 value={input}
                                 onChange={handleInputChange}
