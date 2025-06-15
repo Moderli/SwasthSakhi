@@ -1,0 +1,70 @@
+-- This script sets up the public.users table and a trigger to automatically populate it
+-- upon new user signup in auth.users. It also includes Row-Level Security (RLS)
+-- policies to protect user data.
+
+-- 1. Drop existing objects if they exist, for a clean setup.
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP TABLE IF EXISTS public.users;
+
+-- 2. Create the public.users table with a verification flag.
+-- This table stores public information about users.
+CREATE TABLE public.users (
+  -- The 'id' column references the 'id' from Supabase's built-in 'auth.users' table.
+  -- This creates a link between your public user profiles and the authentication records.
+  -- ON DELETE CASCADE ensures that if a user is deleted from auth, their profile is also deleted.
+  id UUID NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username TEXT UNIQUE,
+  email TEXT UNIQUE,
+  phone_number TEXT,
+  is_verified BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+COMMENT ON COLUMN public.users.is_verified IS 'Tracks if the user has passed the gender verification step.';
+
+-- 3. Create a more resilient function to handle new user creation.
+-- This function is responsible for inserting the new user's data into the public.users table.
+CREATE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+-- SECURITY DEFINER allows this function to run with the permissions of the user who defined it,
+-- which is necessary to insert into the public.users table.
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  -- 'new' is a special variable in PL/pgSQL triggers that contains the new row being inserted.
+  -- We take the id, email, and metadata from the new user record in auth.users
+  -- and insert it into our public.users table.
+  INSERT INTO public.users (id, username, email, phone_number)
+  VALUES (
+    new.id, 
+    new.raw_user_meta_data->>'username', 
+    new.email, 
+    new.raw_user_meta_data->>'phone_number'
+  );
+  RETURN new;
+END;
+$$;
+
+-- 4. Create the trigger to call the function on new user signup.
+-- This trigger fires automatically AFTER a new row is inserted into auth.users.
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- 5. Enable Row-Level Security (RLS) for the users table.
+-- RLS is a critical security feature that restricts which rows users can access or modify.
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- 6. Create RLS policies.
+-- These policies define the rules for accessing the public.users table.
+
+-- This policy allows users to view their own profile information.
+CREATE POLICY "Allow individual read access"
+ON public.users
+FOR SELECT USING (auth.uid() = id);
+
+-- Allow users to update their own profile, including their verification status.
+CREATE POLICY "Allow individual update access"
+ON public.users
+FOR UPDATE USING (auth.uid() = id);

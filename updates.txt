@@ -1,0 +1,80 @@
+- Created a Next.js application.
+- Integrated Tailwind CSS.
+- The project is set up with:
+  - TypeScript
+  - ESLint
+  - App Router
+  - `src` directory for source code.
+
+- Created a new landing page using the information from `u-info.txt`.
+- The landing page is located at `src/app/page.tsx`.
+- Installed `@heroicons/react` for icons used on the page.
+- Updated landing page with the new logo.
+- Adjusted spacing and layout on the landing page for a more balanced design.
+
+- Created a signup page at `src/app/signup/page.tsx`.
+- Created a login page at `src/app/login/page.tsx` with an anonymous login option.
+- Defined the Supabase database schema for the `users` table in `supabase.txt`.
+- Installed the Supabase client library.
+- Created a `.env.local` file for Supabase credentials.
+- Added `.env.local` to `.gitignore`.
+- Created a Supabase client utility file at `src/utils/supabase/client.ts`.
+
+- Fixed UI issues on login and signup pages (icons, text visibility).
+- Implemented Supabase authentication for email/password, Google OAuth, and anonymous login.
+- Added comprehensive error handling and display to the login and signup forms.
+
+- Corrected the Supabase integration to automatically insert user data into the `users` table upon signup using a database trigger.
+- Updated `supabase.txt` with the complete SQL script for table creation, triggers, and row-level security policies.
+
+- Provided troubleshooting steps for the Google OAuth `redirect_uri_mismatch` error.
+- Documented how to configure redirect URIs in both Google Cloud Console and Supabase project settings.
+
+- Created a gender verification page at `/gender-check` using `face-api.js` and webcam input.
+- Integrated `face-api.js` for in-browser gender detection.
+- Updated the login flow to redirect users to the gender verification page after successful authentication.
+- Created a protected dashboard page at `/dashboard` accessible only after passing the gender check.
+- Added a manual step for the user to download and place `face-api.js` models into the `public/models` directory.
+
+- Resolved `face-api.js` build errors by updating `next.config.mjs` to exclude Node.js modules from the client bundle.
+- Fixed an ESLint warning in the gender verification page.
+
+- Diagnosed the 404 "Not Found" error for face-api.js models.
+- Provided clear, manual steps for the user to download the required models and place them in the `public/models` directory.
+
+- Addressed the "Script terminated by timeout" error by refactoring the gender verification page.
+- Streamlined the model loading and webcam initialization process to prevent the browser from becoming unresponsive.
+- Improved user feedback during the loading process on the gender-check page.
+
+- Correctly linked all pages to ensure a logical user flow.
+- Created a dynamic header component that changes based on the user's authentication state.
+- Streamlined the post-login and post-signup redirection to send users directly to the gender verification page.
+
+- Fixed Next.js Link-related ESLint errors in the header component.
+- Resolved the "Module not found: Can't resolve 'encoding'" build error by installing a necessary polyfill.
+
+- Re-engineered the gender verification page to resolve the "webcam not appearing" issue.
+- Separated model loading from webcam initialization for a more stable and resilient process.
+- Implemented more specific error handling and user feedback for camera permissions and other potential issues.
+
+- Fixed the `no-explicit-any` ESLint error in the gender verification page for more robust error handling.
+
+- Temporarily modified the gender verification page to allow male users to pass the check for testing purposes.
+- Enabled anonymous login directly from the landing page.
+- Created a `HeroButtons` client component to handle the anonymous login flow.
+
+- Implemented a persistent gender verification status for registered users by adding an `is_verified` flag to the database.
+- Updated the dashboard to check for this database flag, creating a more robust authentication flow.
+- Provided instructions for enabling anonymous sign-ins in the Supabase project settings.
+
+- Refactored the dashboard's authentication logic to be more clear and robust.
+- Added a reminder about the critical importance of running the database migration script from `supabase.txt`.
+
+- Rebuilt the dashboard page with a new layout based on the reference image.
+- Implemented a functional AI chat interface using the Vercel AI SDK.
+- Created a placeholder "echo" chatbot API route.
+- Added placeholder buttons for "Voice call a doc" and "Video call a doc".
+- Installed necessary dependencies (`ai`, `lucide-react`, `openai-edge`).
+
+- Fixed critical build error by rewriting the chat API route to use the standard Web API `Response` object, removing problematic imports.
+- Resolved all ESLint warnings for unused variables in the dashboard, landing page, and chat components.
