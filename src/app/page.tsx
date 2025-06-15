@@ -38,7 +38,7 @@ export default function Home() {
               <HeroButtons />
             </div>
             <div className="mt-16 sm:mt-24 lg:mt-0 lg:flex-shrink-0 lg:flex-grow">
-              <Image
+        <Image
                 src="/logo.png"
                 alt="SwasthyaSakhi Logo"
                 width={500}
@@ -103,7 +103,7 @@ export default function Home() {
                             </dl>
                         </div>
                     </div>
-                    <Image
+            <Image
                         src="/globe.svg"
                         alt="Product screenshot"
                         className="w-[48rem] max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0"
