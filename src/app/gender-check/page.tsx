@@ -88,7 +88,7 @@ export default function GenderCheckPage() {
       setError('Multiple faces detected. Please ensure only one person is in the frame.');
     } else {
       const gender = detections[0].gender;
-      if (gender === 'female') {
+      if (gender === 'female' || gender === 'male') {
         const user = session?.user;
         if (!user) {
           setError('User session not found. Please log in again.');
