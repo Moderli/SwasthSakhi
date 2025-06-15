@@ -168,6 +168,27 @@ export default function DashboardPage() {
         }
     };
 
+    const handleSuggestionClick = async (suggestion: string) => {
+        setInput(suggestion);
+        // We need to trigger the submission.
+        // A simple way is to get the form and request submit.
+        // This is a bit of a hack, but avoids duplicating the submit logic.
+        const form = document.getElementById('chat-form') as HTMLFormElement;
+        if (form) {
+            form.requestSubmit();
+        }
+    };
+
+    const handleVoiceCall = () => {
+        const phoneNumber = '7827170170';
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            window.location.href = `tel:${phoneNumber}`;
+        } else {
+            alert(`Please call this number: ${phoneNumber}`);
+        }
+    };
+
     const handleLogout = async () => {
         await supabase.auth.signOut();
         sessionStorage.removeItem('genderVerified');
@@ -228,7 +249,10 @@ export default function DashboardPage() {
                             <h2 className="text-xl font-bold">AI Chat</h2>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-4">
-                            <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+                            <button 
+                                onClick={handleVoiceCall}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50"
+                            >
                                 <Phone size={18} />
                                 <span className="hidden sm:inline">Voice call</span>
                             </button>
@@ -240,6 +264,32 @@ export default function DashboardPage() {
                     </header>
                     <div className="flex-1 p-4 overflow-y-auto" ref={messagesEndRef}>
                         <div className="space-y-4">
+                            {messages.length === 0 && !isChatLoading && (
+                                <>
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <Bot size={20} className="text-gray-600"/>
+                                        </div>
+                                        <div className="rounded-lg p-3 max-w-[75%] bg-gray-200 text-gray-900">
+                                            <p className="text-sm">Hi there! How can I help you today?</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-start pl-11 gap-2 py-2">
+                                        <button
+                                            onClick={() => handleSuggestionClick('voice call a female doc')}
+                                            className="rounded-full bg-green-500 text-white px-4 py-2 text-sm font-medium hover:bg-green-600 transition-colors"
+                                        >
+                                            voice call a female doc
+                                        </button>
+                                        <button
+                                            onClick={() => handleSuggestionClick('video call a female doc')}
+                                            className="rounded-full bg-green-500 text-white px-4 py-2 text-sm font-medium hover:bg-green-600 transition-colors"
+                                        >
+                                            video call a female doc
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                             {messages.map((m) => (
                                 <div key={m.id} className={`flex items-start gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
                                     {m.role === 'assistant' && (
@@ -263,7 +313,7 @@ export default function DashboardPage() {
                                     )}
                                 </div>
                             ))}
-                             {isChatLoading && (
+                             {isChatLoading && messages.length > 0 && (
                                 <div className="flex items-start gap-3">
                                     <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
                                         <Bot size={20} className="text-gray-600"/>
@@ -287,7 +337,7 @@ export default function DashboardPage() {
                                 </button>
                             </div>
                         )}
-                        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                        <form id="chat-form" onSubmit={handleSubmit} className="flex items-center gap-2">
                              <input
                                 type="file"
                                 accept="image/*"
