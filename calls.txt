@@ -1,0 +1,247 @@
+# Guide: Implementing Voice and Video Calls in SwasthSakhi
+
+This document outlines the steps and technologies required to add voice and video calling functionality to the SwasthSakhi application.
+
+---
+
+### 1. Technology Choices
+
+Directly implementing WebRTC (the underlying browser technology for real-time communication) is complex. It requires handling signaling servers, STUN/TURN servers for network traversal, and managing peer connections. A third-party service simplifies this immensely.
+
+**Recommended Service: Twilio Programmable Video**
+
+*   **Why Twilio?** It provides a robust, scalable, and well-documented platform that handles all the back-end complexity of WebRTC. Their SDKs for JavaScript are mature and relatively easy to integrate into a Next.js application.
+*   **Alternatives:**
+    *   **Agora.io:** Another popular and powerful real-time communication platform.
+    *   **Whereby Embedded:** Offers a very fast way to embed pre-built video call interfaces.
+    *   **PeerJS / SimplePeer (Self-hosted):** For a more hands-on approach, you could use a WebRTC wrapper library and build your own signaling server using WebSockets. This offers more control but is significantly more complex to build and maintain.
+
+**This guide will assume the use of Twilio.**
+
+---
+
+### 2. Setup & Configuration (Using Twilio)
+
+1.  **Create a Twilio Account:**
+    *   Sign up for a free account at [twilio.com](https://twilio.com).
+    *   You'll get an Account SID, an Auth Token, and some free credit for testing.
+
+2.  **Get API Credentials:**
+    *   From your Twilio Console, find your "Account SID" and "Auth Token".
+    *   Create a new API Key. Go to **Account > API keys & tokens**. Generate a new key pair. You'll get an "API Key SID" and an "API Key Secret".
+
+3.  **Store Credentials Securely:**
+    *   Add your Twilio credentials to your `.env.local` file. **Never expose your Auth Token or API Key Secret on the client-side.**
+
+    ```
+    # .env.local
+
+    # ... existing variables
+    TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    TWILIO_API_KEY_SECRET=your_api_key_secret
+    ```
+
+4.  **Install Required Libraries:**
+    *   You'll need the Twilio client library for your server-side token generation and the Twilio Video library for the client-side.
+
+    ```bash
+    npm install twilio twilio-video
+    ```
+
+---
+
+### 3. Implementation Steps
+
+The core flow of a video call is:
+*User A (initiator) starts a call -> A "room" is created -> User B (recipient) joins the same room.*
+
+#### Step 1: Create a Server-Side API Endpoint for Access Tokens
+
+To join a Twilio video room, each user needs a unique, short-lived Access Token. This token must be generated on your server to keep your credentials secure.
+
+**Create `src/app/api/video/token/route.ts`:**
+
+```typescript
+// src/app/api/video/token/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { twilio } from 'twilio';
+import { v4 as uuidv4 } from 'uuid';
+
+const { AccessToken } = twilio.jwt;
+const { VideoGrant } = AccessToken;
+
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const roomName = url.searchParams.get('roomName');
+  const identity = url.searchParams.get('identity'); // This should be the user's ID or username
+
+  if (!roomName || !identity) {
+    return NextResponse.json({ error: 'Missing roomName or identity' }, { status: 400 });
+  }
+
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const apiKeySid = process.env.TWILIO_API_KEY_SID;
+  const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+
+  if (!accountSid || !apiKeySid || !apiKeySecret) {
+      return NextResponse.json({ error: 'Twilio environment variables not configured' }, { status: 500 });
+  }
+
+  const accessToken = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
+    identity: identity,
+  });
+
+  const videoGrant = new VideoGrant({
+    room: roomName,
+  });
+
+  accessToken.addGrant(videoGrant);
+
+  return NextResponse.json({ token: accessToken.toJwt() });
+}
+```
+*You will also need to `npm install uuid @types/uuid` for generating unique identities if needed.*
+
+
+#### Step 2: Create a Video Call Component on the Front-End
+
+This component will handle fetching the access token, connecting to the Twilio room, and managing the video/audio tracks of the participants.
+
+**Create `src/components/VideoCall.tsx`:**
+
+```typescript
+// src/components/VideoCall.tsx
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import Video from 'twilio-video';
+
+interface VideoCallProps {
+  roomName: string;
+  identity: string;
+}
+
+export default function VideoCall({ roomName, identity }: VideoCallProps) {
+  const [room, setRoom] = useState<Video.Room | null>(null);
+  const localVideoRef = useRef<HTMLDivElement>(null);
+  const remoteVideoRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const connectToRoom = async () => {
+      try {
+        const response = await fetch(`/api/video/token?roomName=${roomName}&identity=${identity}`);
+        const { token } = await response.json();
+
+        const connectedRoom = await Video.connect(token, {
+          name: roomName,
+          audio: true,
+          video: { width: 640 },
+        });
+
+        setRoom(connectedRoom);
+
+        // Handle local participant
+        if (localVideoRef.current) {
+            const localTrack = Array.from(connectedRoom.localParticipant.videoTracks.values())[0].track;
+            localVideoRef.current.appendChild(localTrack.attach());
+        }
+
+        // Handle remote participants
+        connectedRoom.participants.forEach(participant => {
+            participant.on('trackSubscribed', track => {
+                if (remoteVideoRef.current) {
+                    remoteVideoRef.current.appendChild(track.attach());
+                }
+            });
+        });
+
+        connectedRoom.on('participantConnected', participant => {
+            participant.on('trackSubscribed', track => {
+                 if (remoteVideoRef.current) {
+                    remoteVideoRef.current.appendChild(track.attach());
+                }
+            });
+        });
+
+      } catch (error) {
+        console.error('Failed to connect to Twilio room:', error);
+      }
+    };
+
+    connectToRoom();
+
+    return () => {
+      // Clean up on component unmount
+      if (room) {
+        room.disconnect();
+      }
+    };
+  }, [roomName, identity, room]);
+
+  return (
+    <div>
+      <h2>Video Call - Room: {roomName}</h2>
+      <div className="video-container">
+        <div id="local-video" ref={localVideoRef}></div>
+        <div id="remote-video" ref={remoteVideoRef}></div>
+      </div>
+       <button onClick={() => room?.disconnect()}>Leave Call</button>
+    </div>
+  );
+}
+```
+
+#### Step 3: Integrate into the Dashboard
+
+The "Voice call a doc" and "Video call a doc" buttons on the dashboard need to be wired up. This involves:
+1.  Creating a "lobby" or matching system. When a user clicks the button, you need to decide which room they should join. This could be a pre-existing room with a doctor or a new one you create on the fly.
+2.  For a simple implementation, you could generate a unique room name (e.g., using `uuid`) and then pass that room name and the user's identity to the `VideoCall` component.
+
+**Example logic for a dashboard button:**
+```typescript
+// In your dashboard page component
+
+const [inCall, setInCall] = useState(false);
+const [roomName, setRoomName] = useState('');
+const user = session?.user; // From useSupabase()
+
+const handleStartCall = () => {
+    if(!user) return;
+    // This is a simplified example. In a real app, you'd have a system
+    // to connect a user with a specific doctor's room.
+    const newRoomName = `doctor-call-${uuidv4()}`;
+    setRoomName(newRoomName);
+    setInCall(true);
+}
+
+// In the return statement:
+// ...
+{inCall && user ? (
+    <VideoCall roomName={roomName} identity={user.id} />
+) : (
+    <>
+        {/* Your existing chat UI */}
+        <button onClick={handleStartCall}>Video call a doc</button>
+    </>
+)}
+// ...
+```
+
+---
+### 4. Voice-Only Calls
+
+The implementation is nearly identical to video calls. In the `VideoCall.tsx` component, when you connect to the room, simply disable the video option:
+
+```typescript
+// In VideoCall.tsx, for a voice-only call
+const connectedRoom = await Video.connect(token, {
+  name: roomName,
+  audio: true,
+  video: false, // Disable video
+});
+```
+You would then only attach audio tracks instead of video tracks. The UI would also be different (e.g., just showing user avatars instead of video feeds).
+
+This guide provides the foundational structure. A production-ready implementation would require more robust error handling, UI/UX for call controls (mute, disable video), and a proper system for matching patients with doctors in rooms.

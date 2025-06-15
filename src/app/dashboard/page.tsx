@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, ChangeEvent, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User as UserIcon, Bot, Paperclip, X } from 'lucide-react';
+import { User as UserIcon, Bot, Paperclip, X, Menu } from 'lucide-react';
 import Image from 'next/image';
 import { useSupabase } from '@/app/supabase-provider';
 
@@ -30,6 +30,7 @@ export default function DashboardPage() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isChatLoading, setIsChatLoading] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -182,10 +183,21 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="flex h-screen bg-gray-100">
-            <aside className="w-64 bg-white p-6 flex flex-col justify-between">
+        <div className="relative flex h-screen bg-gray-100 overflow-hidden">
+            {/* Mobile Sidebar Overlay */}
+            <div className={`fixed inset-0 bg-gray-900 bg-opacity-50 z-40 transition-opacity md:hidden ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
+
+            <aside className={`absolute top-0 left-0 h-full w-64 bg-white p-6 flex flex-col justify-between transform transition-transform duration-300 ease-in-out z-50 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div>
-                    <h1 className="text-2xl font-bold mb-8">SwasthSakhi</h1>
+                    <div className="flex items-center justify-between mb-8">
+                        <h1 className="text-2xl font-bold">SwasthSakhi</h1>
+                         <button
+                            className="p-1 text-gray-600 md:hidden"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
                     <nav>
                         <ul>
                             <li className="mb-4"><a href="#" className="text-gray-700 font-semibold">Dashboard</a></li>
@@ -204,12 +216,20 @@ export default function DashboardPage() {
             </aside>
 
             <main className="flex-1 flex flex-col">
-                 <div className="flex-1 flex flex-col h-full bg-white m-4 rounded-lg shadow">
+                 <div className="flex-1 flex flex-col h-full bg-white md:m-4 md:rounded-lg shadow-md">
                     <header className="p-4 border-b flex items-center justify-between">
-                        <h2 className="text-xl font-bold">AI Chat</h2>
-                        <div className="flex items-center gap-4">
-                            <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">Voice call a doc</button>
-                            <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">Video call a doc</button>
+                        <div className="flex items-center">
+                            <button
+                                className="mr-4 p-1 text-gray-600 md:hidden"
+                                onClick={() => setIsSidebarOpen(true)}
+                            >
+                                <Menu size={24} />
+                            </button>
+                            <h2 className="text-xl font-bold">AI Chat</h2>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <button className="px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">Voice call</button>
+                            <button className="px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">Video call</button>
                         </div>
                     </header>
                     <div className="flex-1 p-4 overflow-y-auto" ref={messagesEndRef}>
