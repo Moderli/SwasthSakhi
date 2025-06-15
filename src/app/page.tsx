@@ -16,7 +16,11 @@ export default function Home() {
 
       <main>
         {/* Hero Section */}
-        <div className="relative isolate overflow-hidden bg-gradient-to-b from-indigo-100/20 pt-14">
+        <div className="relative isolate overflow-hidden bg-gradient-to-b from-teal-100/20 pt-14">
+           <div
+            className="absolute inset-y-0 right-1/2 -z-10 -mr-96 w-[200%] origin-top-right skew-x-[-30deg] bg-white shadow-xl shadow-indigo-600/10 ring-1 ring-indigo-50 sm:mr-20 lg:mr-0 xl:mr-16 xl:origin-center"
+            aria-hidden="true"
+          />
           <div className="mx-auto max-w-7xl px-6 py-20 sm:py-24 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:py-28">
             <div className="mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
               <div className="flex">
@@ -38,12 +42,12 @@ export default function Home() {
               <HeroButtons />
             </div>
             <div className="mt-16 sm:mt-24 lg:mt-0 lg:flex-shrink-0 lg:flex-grow">
-        <Image
+              <Image
                 src="/logo.png"
                 alt="SwasthyaSakhi Logo"
                 width={500}
                 height={500}
-                className="mx-auto"
+                className="mx-auto drop-shadow-xl"
               />
             </div>
           </div>
@@ -53,7 +57,7 @@ export default function Home() {
         <div id="features" className="bg-white py-20 sm:py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl lg:text-center">
-              <h2 className="text-base font-semibold leading-7 text-indigo-600">Your Health, Your Privacy</h2>
+              <h2 className="text-base font-semibold leading-7 text-teal-600">Your Health, Your Privacy</h2>
               <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                 Everything you need for better health
               </p>
@@ -66,7 +70,7 @@ export default function Home() {
                 {features.map((feature) => (
                   <div key={feature.name} className="relative pl-16">
                     <dt className="text-base font-semibold leading-7 text-gray-900">
-                      <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600">
+                      <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-teal-500 from-teal-500 to-indigo-600 shadow-lg backdrop-blur-sm ring-1 ring-white/20">
                         <feature.icon className="h-6 w-6 text-white" aria-hidden="true" />
                       </div>
                       {feature.name}
@@ -85,7 +89,7 @@ export default function Home() {
                 <div className="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2">
                     <div className="lg:pr-8 lg:pt-4">
                         <div className="lg:max-w-lg">
-                            <h2 className="text-base font-semibold leading-7 text-indigo-600">Our Impact</h2>
+                            <h2 className="text-base font-semibold leading-7 text-teal-600">Our Impact</h2>
                             <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">A healthier future for every woman</p>
                             <p className="mt-6 text-lg leading-8 text-gray-600">
                                 By providing timely access to healthcare, we empower women to take control of their health, leading to stronger families and communities.
@@ -94,7 +98,7 @@ export default function Home() {
                                 {impacts.map((impact) => (
                                 <div key={impact.name} className="relative pl-9">
                                     <dt className="inline font-semibold text-gray-900">
-                                    <impact.icon className="absolute left-1 top-1 h-5 w-5 text-indigo-600" aria-hidden="true" />
+                                    <impact.icon className="absolute left-1 top-1 h-5 w-5 text-teal-600" aria-hidden="true" />
                                     {impact.name}
                                     </dt>
                                     <dd className="inline">{' '}{impact.description}</dd>
@@ -103,13 +107,6 @@ export default function Home() {
                             </dl>
                         </div>
                     </div>
-            <Image
-                        src="/globe.svg"
-                        alt="Product screenshot"
-                        className="w-[48rem] max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[57rem] md:-ml-4 lg:-ml-0"
-                        width={2432}
-                        height={1442}
-                    />
                 </div>
             </div>
         </div>

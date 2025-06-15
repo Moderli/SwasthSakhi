@@ -26,14 +26,14 @@ export default function HeroButtons() {
     <div className="mt-10 flex items-center gap-x-6">
       <Link
         href="/signup"
-        className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+        className="rounded-md bg-teal-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600 transition-colors"
       >
         Get Started
       </Link>
       <button
         onClick={handleAnonymousLogin}
         disabled={isSubmitting}
-        className="text-sm font-semibold leading-6 text-gray-900 disabled:opacity-50"
+        className="text-sm font-semibold leading-6 text-gray-900 disabled:opacity-50 hover:text-gray-700 transition-colors"
       >
         {isSubmitting ? 'Logging in...' : 'Login Anonymously →'}
       </button>
