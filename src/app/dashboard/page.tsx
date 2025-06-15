@@ -237,7 +237,7 @@ export default function DashboardPage() {
             </aside>
 
             <main className="flex-1 flex flex-col">
-                 <div className="flex-1 flex flex-col h-full bg-white md:my-2 md:mr-2 md:rounded-lg shadow-md">
+                 <div className="flex-1 flex flex-col bg-white md:my-2 md:mr-2 md:rounded-lg shadow-md overflow-hidden">
                     <header className="p-4 border-b flex items-center justify-between">
                         <div className="flex items-center">
                             <button
