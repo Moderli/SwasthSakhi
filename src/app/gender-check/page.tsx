@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import * as faceapi from 'face-api.js';
-import { supabase } from '@/utils/supabase/client';
+import { useSupabase } from '@/app/supabase-provider';
 
 type LoadingStatus = 'Initializing' | 'Loading Models' | 'Models Loaded' | 'Starting Webcam' | 'Ready' | 'Error';
 
@@ -13,6 +13,7 @@ export default function GenderCheckPage() {
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const router = useRouter();
+  const { supabase, session } = useSupabase();
 
   // Effect for loading models
   useEffect(() => {
@@ -88,7 +89,7 @@ export default function GenderCheckPage() {
     } else {
       const gender = detections[0].gender;
       if (gender === 'female' || gender === 'male') {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = session?.user;
         if (!user) {
           setError('User session not found. Please log in again.');
           setIsChecking(false);
@@ -99,23 +100,25 @@ export default function GenderCheckPage() {
         const stream = videoRef.current?.srcObject as MediaStream;
         stream?.getTracks().forEach(track => track.stop());
 
-        if (user.is_anonymous) {
-          // For anonymous users, just use session storage
-          sessionStorage.setItem('genderVerified', 'true');
-          router.push('/dashboard');
-        } else {
-          // For regular users, update the database
-          const { error: updateError } = await supabase
+        // For regular users, we still update the database in the background
+        if (!user.is_anonymous) {
+          supabase
             .from('users')
             .update({ is_verified: true })
-            .eq('id', user.id);
-          
-          if (updateError) {
-            setError('Failed to save verification status. Please try again.');
-          } else {
-            router.push('/dashboard');
-          }
+            .eq('id', user.id)
+            .then(({ error: updateError }) => {
+              if (updateError) {
+                // If the background update fails, we can log it, but we don't need to block the user
+                console.error('Failed to save verification status:', updateError.message);
+              }
+            });
         }
+        
+        // For ALL users, set the session storage flag and redirect immediately.
+        // This is the key to breaking the redirect loop.
+        sessionStorage.setItem('genderVerified', 'true');
+        router.push('/dashboard');
+
       } else {
         setError('Could not determine gender. Please try again.');
       }

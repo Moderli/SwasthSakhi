@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/utils/supabase/client';
+import { useSupabase } from '@/app/supabase-provider';
 
 export default function HeroButtons() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const { supabase } = useSupabase();
 
   const handleAnonymousLogin = async () => {
     setIsSubmitting(true);

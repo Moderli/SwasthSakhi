@@ -1,28 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/utils/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { useSupabase } from '@/app/supabase-provider';
 
 export default function Header() {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    // Also get the initial user
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
+  const { session } = useSupabase();
+  const user = session?.user;
 
   return (
     <header className="absolute inset-x-0 top-0 z-50">

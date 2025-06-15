@@ -9,10 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.2.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/supabase-js": "^2.50.0",
     "@tensorflow/tfjs-core": "^4.22.0",
-    "ai": "^4.3.16",
     "encoding": "^0.1.13",
     "face-api.js": "^0.22.2",
     "lucide-react": "^0.515.0",

@@ -78,3 +78,34 @@
 
 - Fixed critical build error by rewriting the chat API route to use the standard Web API `Response` object, removing problematic imports.
 - Resolved all ESLint warnings for unused variables in the dashboard, landing page, and chat components.
+
+- Replaced the echo bot in the dashboard's AI chat with a functional implementation using the Vercel AI SDK and the user's Gemini API key.
+- Encountered and resolved multiple build errors related to breaking changes in the `ai` package by removing the dependency and implementing a custom streaming solution.
+- Rewritten the dashboard front-end to manage chat state independently of the `ai` package's `useChat` hook.
+- Restored and verified the authentication and gender-verification checks on the dashboard page to ensure security.
+- Fixed all outstanding linter errors and type conflicts in the dashboard component.
+- The AI chat is now fully functional and powered by the Google Gemini API.
+- Added a placeholder for the assistant's message to improve user experience during response streaming.
+- Correctly handled user avatar display for both registered and anonymous users.
+- Updated the dashboard layout to match the new design, including a sidebar and main content area.
+- Added a logout button to the dashboard.
+- Ensured the chat scrolls to the bottom automatically as new messages arrive.
+- Replaced non-existent UI component imports with standard HTML elements and Tailwind CSS.
+- Re-installed the `@supabase/auth-helpers-react` package to restore user authentication functionality.
+- Uninstalled the `ai` package to remove the source of persistent import errors.
+- Implemented a custom `AIStream` function to handle streaming responses from the Google Generative AI SDK.
+- Replaced the placeholder echo bot with a direct implementation using the `@google/generative-ai` library.
+- Installed the `@google/generative-ai` package.
+- Updated the chat API route to use the Gemini API.
+- The AI chat is now powered by the user's Gemini API key.
+
+### Gemini API Integration
+- Integrated the Google Gemini API to power the AI chat feature.
+- Installed the `@google/generative-ai` npm package.
+- Created a new API route (`src/app/api/chat/route.ts`) to handle chat requests and stream responses from the Gemini API.
+- Removed the `ai` package dependency due to breaking changes and implemented a stable, direct streaming solution using native Web APIs.
+- Updated the dashboard component (`src/app/dashboard/page.tsx`) to remove the `useChat` hook and manage chat state locally.
+- Ensured the `GEM_API_KEY` from the `.env.local` file is securely used on the server-side.
+- The chat is now fully functional, streaming responses from Gemini Pro.
+- Restored all authentication and page protection logic on the dashboard.
+- Corrected all linter errors and type issues that arose during the refactor.

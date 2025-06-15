@@ -1,34 +1,66 @@
+import {
+  GoogleGenerativeAI,
+  HarmCategory,
+  HarmBlockThreshold,
+} from '@google/generative-ai';
+
 export const runtime = 'edge';
 
-// The new route handles POST requests to /api/chat
+const genAI = new GoogleGenerativeAI(process.env.GEM_API_KEY || "");
+
+interface Message {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+const formatMessage = (message: Message) => ({
+    role: message.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: message.content }],
+});
+
 export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const lastMessage = messages[messages.length - 1];
+    const { messages } : { messages: Message[] } = await req.json();
 
-  const responseStream = new ReadableStream({
-    start(controller) {
-      const text = `I am a simple echo bot. You said: "${lastMessage.content}"`;
-      const encoder = new TextEncoder();
-      const chunks = text.split(" ");
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash-latest',
+      safetySettings: [
+          {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+          },
+        ],
+    });
 
-      function push() {
-        if (chunks.length > 0) {
-          const chunk = chunks.shift();
-          if (chunk) {
-            controller.enqueue(encoder.encode(chunk + " "));
-          }
-          setTimeout(push, 50);
-        } else {
-          controller.close();
-        }
-      }
-      push();
-    },
-  });
+    const chat = model.startChat({
+        history: messages.slice(0, -1).map(formatMessage),
+    });
 
-  return new Response(responseStream, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-    },
-  });
+    const lastMessage = messages[messages.length - 1];
+    const result = await chat.sendMessageStream(lastMessage.content);
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+        async start(controller) {
+            for await (const chunk of result.stream) {
+                controller.enqueue(encoder.encode(chunk.text()));
+            }
+            controller.close();
+        },
+    });
+
+    return new Response(stream, {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
 }

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { supabase } from '@/utils/supabase/client';
+import { useSupabase } from '@/app/supabase-provider';
 
 export default function SignupPage() {
   const [username, setUsername] = useState('');
@@ -13,6 +13,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { supabase } = useSupabase();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +41,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/gender-check`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     if (error) {
