@@ -152,7 +152,7 @@ export default function GenderCheckPage() {
         
         {error && <div className="rounded-md bg-red-100 p-4 text-sm text-red-700">{error}</div>}
         
-        <div className="relative mx-auto h-80 w-80 overflow-hidden rounded-lg border-4 border-indigo-500 shadow-lg">
+        <div className="relative mx-auto h-64 w-64 sm:h-80 sm:w-80 overflow-hidden rounded-lg shadow-lg border-2 border-black">
           <video ref={videoRef} autoPlay muted playsInline className="h-full w-full -scale-x-100 object-cover" />
           {loadingStatus !== 'Ready' && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white">
